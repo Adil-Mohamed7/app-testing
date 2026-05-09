@@ -7,6 +7,7 @@ type SheetDataContextType = {
   data: SheetData | null;
   loading: boolean;
   error: string | null;
+  refresh: () => void;
 };
 
 const SheetDataContext = createContext<SheetDataContextType | undefined>(undefined);
@@ -15,6 +16,9 @@ export function SheetDataProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<SheetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
+  const refresh = () => setTick((t) => t + 1);
 
   useEffect(() => {
     let mounted = true;
@@ -33,14 +37,11 @@ export function SheetDataProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         setLoading(false);
       });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    return () => { mounted = false; };
+  }, [tick]);
 
   return (
-    <SheetDataContext.Provider value={{ data, loading, error }}>
+    <SheetDataContext.Provider value={{ data, loading, error, refresh }}>
       {children}
     </SheetDataContext.Provider>
   );

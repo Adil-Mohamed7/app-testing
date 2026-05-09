@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { STATUS_META } from "@/lib/sheetData";
 import { useSheetData } from "@/lib/SheetDataContext";
+import { useCountUp } from "@/lib/useCountUp";
 import {
   PieChart,
   Pie,
@@ -42,6 +43,11 @@ const ChartTooltip = ({ active, payload }: any) => {
     </div>
   );
 };
+
+function AnimatedNum({ value }: { value: number }) {
+  const n = useCountUp(value);
+  return <>{n}</>;
+}
 
 export default function ModuleDetailsPanel() {
   const params = useSearchParams();
@@ -101,22 +107,22 @@ export default function ModuleDetailsPanel() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginBottom: 18 }}>
             <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Modules</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}>{moduleData.length}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={moduleData.length} /></p>
               <p style={{ fontSize: 12, color: "var(--text-muted)" }}>tracked right now</p>
             </div>
             <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Total features</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}>{overall.total}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={overall.total} /></p>
               <p style={{ fontSize: 12, color: "var(--text-muted)" }}>across all modules</p>
             </div>
             <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Completed</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-green)" }}>{overall.completed}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-green)" }}><AnimatedNum value={overall.completed} /></p>
               <p style={{ fontSize: 12, color: "var(--text-muted)" }}>features done</p>
             </div>
             <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Pending</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}>{overall.pending}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={overall.pending} /></p>
               <p style={{ fontSize: 12, color: "var(--text-muted)" }}>issues remaining</p>
             </div>
           </div>
@@ -199,7 +205,7 @@ export default function ModuleDetailsPanel() {
               transform: "translate(20px, -20px)",
             }} />
             <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 600 }}>Completed</p>
-            <p style={{ fontSize: 36, fontWeight: 900, color: STATUS_META.completed.color, lineHeight: 1, marginBottom: 4 }}>{mod.completed}</p>
+            <p style={{ fontSize: 36, fontWeight: 900, color: STATUS_META.completed.color, lineHeight: 1, marginBottom: 4 }}><AnimatedNum value={mod.completed} /></p>
             <p style={{ fontSize: 12, color: "var(--text-muted)", opacity: 0.8 }}>features finished</p>
           </div>
           <div style={{
@@ -221,7 +227,7 @@ export default function ModuleDetailsPanel() {
               transform: "translate(20px, -20px)",
             }} />
             <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 600 }}>Pending</p>
-            <p style={{ fontSize: 36, fontWeight: 900, color: STATUS_META.pending.color, lineHeight: 1, marginBottom: 4 }}>{mod.pending}</p>
+            <p style={{ fontSize: 36, fontWeight: 900, color: STATUS_META.pending.color, lineHeight: 1, marginBottom: 4 }}><AnimatedNum value={mod.pending} /></p>
             <p style={{ fontSize: 12, color: "var(--text-muted)", opacity: 0.8 }}>issues remaining</p>
           </div>
           <div style={{
@@ -243,7 +249,7 @@ export default function ModuleDetailsPanel() {
               transform: "translate(20px, -20px)",
             }} />
             <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.8px", fontWeight: 600 }}>Total</p>
-            <p style={{ fontSize: 36, fontWeight: 900, color: "var(--text-primary)", lineHeight: 1, marginBottom: 4 }}>{mod.total}</p>
+            <p style={{ fontSize: 36, fontWeight: 900, color: "var(--text-primary)", lineHeight: 1, marginBottom: 4 }}><AnimatedNum value={mod.total} /></p>
             <p style={{ fontSize: 12, color: "var(--text-muted)", opacity: 0.8 }}>items in module</p>
           </div>
         </div>
@@ -273,7 +279,7 @@ export default function ModuleDetailsPanel() {
                   transform: "translate(15px, -15px)",
                 }} />
                 <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: 8, fontWeight: 600 }}>{STATUS_META[item.key].label}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: meta.color, lineHeight: 1, marginBottom: 4 }}>{item.value}</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: meta.color, lineHeight: 1, marginBottom: 4 }}><AnimatedNum value={item.value} /></div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", opacity: 0.8 }}>{percent}%</div>
               </div>
             );
@@ -298,7 +304,7 @@ export default function ModuleDetailsPanel() {
               />
             </svg>
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color }}>{mod.progress}%</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color }}><AnimatedNum value={mod.progress} />%</div>
               <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.6px" }}>complete</div>
             </div>
           </div>

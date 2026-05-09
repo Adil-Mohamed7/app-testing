@@ -40,13 +40,13 @@ export default function Sidebar() {
           type="button"
           className={`nav-item${!moduleSelected ? " active" : ""}`}
           onClick={() => router.push("/", { scroll: false })}
-          style={{ justifyContent: "space-between", width: "100%" }}
+          style={{ justifyContent: "space-between" }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="nav-icon">▦</span>
             Dashboard
           </span>
-          {!moduleSelected && <span style={{ fontSize: 12, opacity: 0.8 }}>active</span>}
+          {!moduleSelected && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
         </button>
         {NAV_ITEMS.map((item) => (
           <a key={item.label} className={`nav-item${item.active ? " active" : ""}`} href="#">
