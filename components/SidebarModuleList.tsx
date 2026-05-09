@@ -11,7 +11,7 @@ function getProgressColor(pct: number) {
   return "#ef4444";
 }
 
-export default function SidebarModuleList() {
+export default function SidebarModuleList({ onItemClick }: { onItemClick?: () => void }) {
   const router = useRouter();
   const params = useSearchParams();
   const activeId = params.get("module");
@@ -24,6 +24,7 @@ export default function SidebarModuleList() {
     const next = activeId === id ? null : id;
     const url = next ? `/?module=${next}` : "/";
     router.push(url, { scroll: false });
+    onItemClick?.();
   };
 
   return (

@@ -55,6 +55,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* Background mesh */
@@ -76,6 +77,8 @@ body::before {
   min-height: 100vh;
   position: relative;
   z-index: 1;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Sidebar */
@@ -91,6 +94,18 @@ body::before {
   position: fixed;
   top: 0; left: 0; bottom: 0;
   z-index: 100;
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 99;
+  backdrop-filter: blur(4px);
 }
 
 .sidebar-logo {
@@ -131,6 +146,9 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .nav-label {
@@ -195,6 +213,9 @@ body::before {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Topbar */
@@ -210,6 +231,12 @@ body::before {
   position: sticky;
   top: 0;
   z-index: 50;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .topbar-left h1 {
@@ -292,6 +319,9 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* ─── Cards / Glass ───────────────────────────────────────────────────── */
@@ -302,6 +332,9 @@ body::before {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .glass-card:hover {
@@ -332,6 +365,8 @@ body::before {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .kpi-card {
@@ -345,6 +380,9 @@ body::before {
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
   cursor: default;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .kpi-card::before {
@@ -425,6 +463,89 @@ body::before {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
+}
+
+/* Dashboard content wrapper */
+.dashboard-content-wrapper {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.module-progress-card {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+}
+
+/* Module progress scroll containers */
+.module-progress-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.module-progress-scroll-inner {
+  width: 100%;
+  min-width: 100%;
+}
+
+/* Chart scroll containers */
+.chart-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart-scroll-inner {
+  width: 100%;
+  min-width: 100%;
+}
+
+/* Dashboard overview scroll containers */
+.dashboard-overview-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-overview-scroll-inner {
+  width: 100%;
+  min-width: 100%;
+}
+
+/* Module overview chart scroll containers */
+.module-overview-chart-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+.module-overview-chart-inner {
+  width: 100%;
+  min-width: 100%;
+}
+
+.status-breakdown-card {
+  grid-column: 2;
+  grid-row: 1;
+  max-width: 100%;
+}
+
+.top-performers-card {
+  grid-column: 2;
+  grid-row: 2;
+  max-width: 100%;
+}
+
+.needs-attention-card {
+  grid-column: 2;
+  grid-row: 3;
+  max-width: 100%;
 }
 
 /* ─── Status Table ───────────────────────────────────────────────────── */
@@ -583,18 +704,245 @@ body::before {
 .fade-in-4 { animation-delay: 0.20s; }
 
 /* ─── Responsive ─────────────────────────────────────────────────────── */
+
+/* Tablet & below (1200px) */
 @media (max-width: 1200px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .chart-grid { grid-template-columns: 1fr; }
   .chart-grid-3 { grid-template-columns: 1fr 1fr; }
+  
+  .dashboard-content-wrapper {
+    grid-template-columns: 1fr;
+  }
+  
+  .module-progress-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  
+  .status-breakdown-card,
+  .top-performers-card,
+  .needs-attention-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
 }
 
+/* Mobile landscape & below (900px) */
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 16px;
+    height: 56px;
+  }
+  
+  .topbar-left h1 { font-size: 16px; }
+  .topbar-left .breadcrumb { display: none; }
+  
+  .topbar-right { gap: 8px; }
+  .topbar-btn { padding: 6px 10px; font-size: 12px; }
+  .topbar-btn span { display: none; }
+  
+  .page-content { padding: 20px 16px; gap: 20px; }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 16px 0;
+  }
+  
+  .card-body { padding: 12px 16px 18px; }
+  
+  .kpi-card { padding: 18px; }
+  .kpi-value { font-size: 28px; }
+}
+
+/* Mobile portrait (768px) */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open { 
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+  
+  .sidebar-overlay {
+    display: block;
+  }
+  
+  .sidebar-close-btn {
+    display: flex !important;
+  }
+  
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  
   .main-content { margin-left: 0; }
-  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  
+  .kpi-grid { grid-template-columns: 1fr; gap: 12px; }
+  .chart-grid { grid-template-columns: 1fr; gap: 12px; }
   .chart-grid-3 { grid-template-columns: 1fr; }
-  .page-content { padding: 16px; }
+  
+  .dashboard-content-wrapper {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .page-content { padding: 16px; gap: 16px; max-width: 100%; }
+  
+  .glass-card { max-width: 100%; }
+  
+  .section-title { font-size: 14px; }
+  .section-subtitle { font-size: 11px; }
+  
+  /* Module progress card stays within screen */
+  .module-progress-card {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .module-progress-card .card-header,
+  .module-progress-card .card-body {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Scrollable wrapper */
+  .module-progress-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Inner content with fixed width */
+  .module-progress-scroll-inner {
+    min-width: 900px;
+    width: max-content;
+  }
+  
+  .module-legend {
+    display: none !important;
+  }
+  
+  /* Chart cards stay within screen */
+  .status-breakdown-card,
+  .top-performers-card,
+  .needs-attention-card {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .status-breakdown-card .card-header,
+  .status-breakdown-card .card-body,
+  .top-performers-card .card-header,
+  .top-performers-card .card-body,
+  .needs-attention-card .card-header,
+  .needs-attention-card .card-body {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Chart scroll wrappers */
+  .chart-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Chart inner content with fixed widths */
+  .status-breakdown-card .chart-scroll-inner {
+    min-width: 350px;
+    width: max-content;
+  }
+  
+  .top-performers-card .chart-scroll-inner,
+  .needs-attention-card .chart-scroll-inner {
+    min-width: 500px;
+    width: max-content;
+  }
+  
+  /* Dashboard overview 4-card grid - stack vertically on mobile */
+  .dashboard-overview-scroll-wrapper {
+    width: 100%;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+  
+  .dashboard-overview-scroll-inner {
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .dashboard-overview-scroll-inner > div {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  /* Module overview chart - horizontal scroll */
+  .module-overview-chart-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .module-overview-chart-inner {
+    min-width: 800px;
+    width: max-content;
+  }
+}
+
+/* Small mobile (480px) */
+@media (max-width: 480px) {
+  .topbar { padding: 0 12px; height: 52px; }
+  .topbar-left h1 { font-size: 15px; }
+  .topbar-right { gap: 6px; }
+  .live-badge { padding: 4px 8px; font-size: 11px; }
+  
+  .page-content { padding: 12px; gap: 12px; max-width: 100%; }
+  
+  .glass-card { max-width: 100%; }
+  
+  .kpi-card { padding: 14px; max-width: 100%; }
+  .kpi-icon { width: 32px; height: 32px; font-size: 16px; }
+  .kpi-value { font-size: 24px; }
+  .kpi-label { font-size: 12px; }
+  .kpi-delta { font-size: 10px; padding: 2px 6px; }
+  
+  .card-header { padding: 12px; }
+  .card-body { padding: 12px; }
+  .card-title { font-size: 13px; }
+  
+  /* Module progress inner content width */
+  .module-progress-scroll-inner {
+    min-width: 800px;
+  }
+  
+  /* Chart inner content widths for small mobile */
+  .status-breakdown-card .chart-scroll-inner {
+    min-width: 300px;
+  }
+  
+  .top-performers-card .chart-scroll-inner,
+  .needs-attention-card .chart-scroll-inner {
+    min-width: 450px;
+  }
+  
+  /* Module overview chart - smaller width on small mobile */
+  .module-overview-chart-inner {
+    min-width: 700px;
+  }
 }
 
 @keyframes spin {
@@ -609,4 +957,119 @@ body::before {
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+/* ─── Component-specific responsive ──────────────────────────────────── */
+
+/* Hero banner mobile */
+@media (max-width: 900px) {
+  .hero-banner {
+    flex-direction: column !important;
+    padding: 20px 16px !important;
+    gap: 16px !important;
+    max-width: 100% !important;
+  }
+  
+  .hero-stats {
+    width: 100% !important;
+    padding: 12px 16px !important;
+    max-width: 100% !important;
+  }
+  
+  .hero-progress {
+    font-size: 32px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-banner {
+    padding: 16px 12px !important;
+    max-width: 100% !important;
+  }
+  
+  .hero-title {
+    font-size: 18px !important;
+  }
+  
+  .hero-progress {
+    font-size: 28px !important;
+  }
+}
+
+/* Module progress list mobile */
+@media (max-width: 900px) {
+  .module-progress-grid {
+    grid-template-columns: 1fr 80px 60px !important;
+    font-size: 11px !important;
+    max-width: 100% !important;
+  }
+  
+  .module-progress-grid > span:nth-child(n+4):nth-child(-n+8) {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .module-progress-grid {
+    grid-template-columns: 220px 120px 90px 90px 90px 90px 90px 120px 90px !important;
+    font-size: 12px !important;
+  }
+  
+  .module-progress-grid > span:nth-child(n+4):nth-child(-n+8) {
+    display: block !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .module-progress-grid {
+    grid-template-columns: 200px 110px 80px 80px 80px 80px 80px 110px 80px !important;
+    font-size: 11px !important;
+    gap: 8px !important;
+  }
+}
+
+/* Module details panel mobile */
+@media (max-width: 900px) {
+  .module-detail-grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    max-width: 100% !important;
+  }
+  
+  .module-detail-grid-5 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    max-width: 100% !important;
+  }
+  
+  .module-detail-grid-5 > div:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .module-detail-grid-5 {
+    grid-template-columns: 1fr !important;
+    max-width: 100% !important;
+  }
+  
+  .module-detail-grid-5 > div:last-child {
+    grid-column: auto;
+  }
+}
+
+/* Overall summary bar mobile */
+@media (max-width: 768px) {
+  .overall-summary-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 14px 16px !important;
+    max-width: 100% !important;
+  }
+  
+  .overall-summary-stats {
+    width: 100%;
+    justify-content: space-around !important;
+    max-width: 100% !important;
+  }
 }

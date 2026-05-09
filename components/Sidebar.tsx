@@ -14,7 +14,7 @@ const INTEGRATIONS = [
   { icon: "⚙️", label: "Settings",      active: false },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const [modulesOpen, setModulesOpen] = useState(true);
   const params = useSearchParams();
   const router = useRouter();
@@ -23,7 +23,32 @@ export default function Sidebar() {
   const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${isOpen ? " open" : ""}`}>
+      {/* Close button for mobile */}
+      <button
+        className="sidebar-close-btn"
+        onClick={onClose}
+        style={{
+          display: "none",
+          position: "absolute",
+          top: 16,
+          right: 16,
+          width: 32,
+          height: 32,
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          cursor: "pointer",
+          fontSize: 18,
+          color: "var(--text-secondary)",
+          zIndex: 10,
+        }}
+      >
+        ✕
+      </button>
+      
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-icon">⚡</div>
@@ -39,7 +64,10 @@ export default function Sidebar() {
         <button
           type="button"
           className={`nav-item${!moduleSelected ? " active" : ""}`}
-          onClick={() => router.push("/", { scroll: false })}
+          onClick={() => {
+            router.push("/", { scroll: false });
+            onClose?.();
+          }}
           style={{ justifyContent: "space-between" }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -49,7 +77,7 @@ export default function Sidebar() {
           {!moduleSelected && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
         </button>
         {NAV_ITEMS.map((item) => (
-          <a key={item.label} className={`nav-item${item.active ? " active" : ""}`} href="#">
+          <a key={item.label} className={`nav-item${item.active ? " active" : ""}`} href="#" onClick={onClose}>
             <span className="nav-icon">{item.icon}</span>
             {item.label}
           </a>
@@ -72,13 +100,13 @@ export default function Sidebar() {
         <Suspense fallback={
           <div style={{ padding: "8px 0", color: "var(--text-muted)", fontSize: 12 }}>Loading…</div>
         }>
-          {modulesOpen && <div style={{ paddingLeft: 6, paddingTop: 4 }}><SidebarModuleList /></div>}
+          {modulesOpen && <div style={{ paddingLeft: 6, paddingTop: 4 }}><SidebarModuleList onItemClick={onClose} /></div>}
         </Suspense>
 
         {/* Integrations */}
         <span className="nav-label" style={{ marginTop: 16 }}>Integrations</span>
         {INTEGRATIONS.map((item) => (
-          <a key={item.label} className={`nav-item${item.active ? " active" : ""}`} href="#">
+          <a key={item.label} className={`nav-item${item.active ? " active" : ""}`} href="#" onClick={onClose}>
             <span className="nav-icon">{item.icon}</span>
             {item.label}
           </a>

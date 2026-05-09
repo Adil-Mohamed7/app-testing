@@ -1,11 +1,34 @@
 "use client";
 
-export default function Topbar() {
+import { useState } from "react";
+
+export default function Topbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <h1>Test Dashboard</h1>
-        <p className="breadcrumb">Overview · All Environments · Last 15 days</p>
+        <button
+          className="mobile-menu-btn"
+          onClick={onMenuToggle}
+          style={{
+            display: "none",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 36,
+            height: 36,
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            cursor: "pointer",
+            marginRight: 12,
+            fontSize: 18,
+          }}
+        >
+          ☰
+        </button>
+        <div>
+          <h1>Test Dashboard</h1>
+          <p className="breadcrumb">Overview · All Environments · Last 15 days</p>
+        </div>
       </div>
 
       <div className="topbar-right">
@@ -14,16 +37,8 @@ export default function Topbar() {
           Live
         </div>
 
-        <button id="btn-filter" className="topbar-btn">
-          <span>⚙</span> Filters
-        </button>
-
         <button id="btn-export" className="topbar-btn">
-          <span>↓</span> Export
-        </button>
-
-        <button id="btn-run" className="topbar-btn primary">
-          <span>▶</span> Run Suite
+          <span>↓</span> <span>Export</span>
         </button>
       </div>
     </header>

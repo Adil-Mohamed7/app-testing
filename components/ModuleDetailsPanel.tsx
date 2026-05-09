@@ -104,52 +104,60 @@ export default function ModuleDetailsPanel() {
         </div>
 
         <div className="card-body" style={{ paddingTop: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginBottom: 18 }}>
-            <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Modules</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={moduleData.length} /></p>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>tracked right now</p>
-            </div>
-            <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Total features</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={overall.total} /></p>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>across all modules</p>
-            </div>
-            <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Completed</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-green)" }}><AnimatedNum value={overall.completed} /></p>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>features done</p>
-            </div>
-            <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Pending</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={overall.pending} /></p>
-              <p style={{ fontSize: 12, color: "var(--text-muted)" }}>issues remaining</p>
+          <div className="dashboard-overview-scroll-wrapper">
+            <div className="dashboard-overview-scroll-inner">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginBottom: 18 }}>
+                <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Modules</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={moduleData.length} /></p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>tracked right now</p>
+                </div>
+                <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Total features</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={overall.total} /></p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>across all modules</p>
+                </div>
+                <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Completed</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--accent-green)" }}><AnimatedNum value={overall.completed} /></p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>features done</p>
+                </div>
+                <div style={{ padding: 18, borderRadius: "var(--radius-lg)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.6px" }}>Pending</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)" }}><AnimatedNum value={overall.pending} /></p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>issues remaining</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div style={{ background: "rgba(13,20,36,0.65)", borderRadius: "var(--radius-lg)", border: "1px solid rgba(255,255,255,0.08)", padding: 18 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Module overview</p>
-                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Compare progress and workloads across all modules.</p>
+          <div className="module-overview-chart-wrapper">
+            <div className="module-overview-chart-inner">
+              <div style={{ background: "rgba(13,20,36,0.65)", borderRadius: "var(--radius-lg)", border: "1px solid rgba(255,255,255,0.08)", padding: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>Module overview</p>
+                    <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Compare progress and workloads across all modules.</p>
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.6px" }}>stacked status</span>
+                </div>
+                <div style={{ width: "100%", height: 360 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 8, right: 18, left: -10, bottom: 32 }}>
+                      <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.08)" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} interval={0} angle={-30} textAnchor="end" height={60} />
+                      <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+                      <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 11, paddingBottom: 8 }} />
+                      <Bar dataKey="completed" stackId="a" fill="#22c55e" />
+                      <Bar dataKey="ongoing" stackId="a" fill="#3b82f6" />
+                      <Bar dataKey="hold" stackId="a" fill="#f59e0b" />
+                      <Bar dataKey="cancelled" stackId="a" fill="#ef4444" />
+                      <Bar dataKey="pending" stackId="a" fill="#64748b" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.6px" }}>stacked status</span>
-            </div>
-            <div style={{ width: "100%", height: 360 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 18, left: -10, bottom: 32 }}>
-                  <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} interval={0} angle={-30} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                  <Legend wrapperStyle={{ color: "#94a3b8", fontSize: 11, paddingBottom: 8 }} />
-                  <Bar dataKey="completed" stackId="a" fill="#22c55e" />
-                  <Bar dataKey="ongoing" stackId="a" fill="#3b82f6" />
-                  <Bar dataKey="hold" stackId="a" fill="#f59e0b" />
-                  <Bar dataKey="cancelled" stackId="a" fill="#ef4444" />
-                  <Bar dataKey="pending" stackId="a" fill="#64748b" />
-                </BarChart>
-              </ResponsiveContainer>
             </div>
           </div>
         </div>
@@ -185,7 +193,7 @@ export default function ModuleDetailsPanel() {
       </div>
 
       <div className="card-body" style={{ paddingTop: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16, marginBottom: 20 }}>
+        <div className="module-detail-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16, marginBottom: 20 }}>
           <div style={{
             padding: 24,
             borderRadius: "var(--radius-xl)",
@@ -254,7 +262,7 @@ export default function ModuleDetailsPanel() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
+        <div className="module-detail-grid-5" style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
           {statuses.map((item) => {
             const meta = STATUS_META[item.key];
             const percent = mod.total > 0 ? Math.round((item.value / mod.total) * 100) : 0;

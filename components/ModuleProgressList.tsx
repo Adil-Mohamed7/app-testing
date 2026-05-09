@@ -33,6 +33,7 @@ function ModuleRow({ mod, STATUS_META, index }: { mod: ModuleData; STATUS_META: 
   return (
     <div
       id={`module-row-${mod.id}`}
+      className="module-progress-grid"
       style={{
         display: "grid", gridTemplateColumns: GRID, gap: 8,
         padding: "12px 16px", borderRadius: 10, alignItems: "center",
@@ -109,7 +110,7 @@ function TotalsRow({ moduleData, STATUS_META }: Props) {
 export default function ModuleProgressList({ moduleData, STATUS_META }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <div style={{
+      <div className="module-progress-grid" style={{
         display: "grid", gridTemplateColumns: GRID, gap: 8,
         padding: "0 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)",
         fontSize: 10, fontWeight: 600, letterSpacing: "0.6px",

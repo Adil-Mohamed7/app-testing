@@ -72,9 +72,11 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
 }
 
 export default function DashboardPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   return (
     <SheetDataProvider>
-      <DashboardContent />
+      <DashboardContent sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
     </SheetDataProvider>
   );
 }
@@ -130,7 +132,7 @@ function OverallSummaryBar({ moduleData }: { moduleData: ModuleData[] }) {
     ? Math.round(moduleData.reduce((sum, m) => sum + m.progress, 0) / totalModules)
     : 0;
   return (
-    <div style={{
+    <div className="overall-summary-bar" style={{
       background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.06) 50%, rgba(6,182,212,0.04) 100%)",
       border: "1px solid rgba(59,130,246,0.12)",
       borderRadius: "var(--radius-lg)",
@@ -138,7 +140,7 @@ function OverallSummaryBar({ moduleData }: { moduleData: ModuleData[] }) {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       gap: 16, marginBottom: 16,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="overall-summary-stats" style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 20, fontWeight: 900, color: "#3b82f6", lineHeight: 1 }}>{totalModules}</div>
           <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Modules</div>
@@ -162,7 +164,7 @@ function OverallSummaryBar({ moduleData }: { moduleData: ModuleData[] }) {
 function HeroBanner({ projectMeta }: { projectMeta: { projectName: string; lastUpdated: string; overallProgress: number; totalTasks: number; completed: number; pending: number } }) {
   const animatedProgress = useCountUp(projectMeta.overallProgress);
   return (
-    <div style={{
+    <div className="hero-banner" style={{
       background: "linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.08) 50%, rgba(6,182,212,0.06) 100%)",
       border: "1px solid rgba(59,130,246,0.15)",
       borderRadius: "var(--radius-xl)",
@@ -171,18 +173,18 @@ function HeroBanner({ projectMeta }: { projectMeta: { projectName: string; lastU
       gap: 24, animation: "fadeInUp 0.4s ease both",
     }}>
       <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
           <span style={{ fontSize: 24 }}>⚡</span>
-          <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px" }}>{projectMeta.projectName}</h1>
+          <h1 className="hero-title" style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.5px" }}>{projectMeta.projectName}</h1>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", background: "rgba(34,197,94,0.12)", color: "#22c55e", borderRadius: 20, border: "1px solid rgba(34,197,94,0.2)" }}>ACTIVE</span>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
           Project progress overview across all modules · Last updated {projectMeta.lastUpdated}
         </p>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 20, flexShrink: 0, background: "rgba(0,0,0,0.2)", padding: "16px 24px", borderRadius: "var(--radius-lg)", border: "1px solid rgba(255,255,255,0.07)" }}>
+      <div className="hero-stats" style={{ display: "flex", alignItems: "center", gap: 20, flexShrink: 0, background: "rgba(0,0,0,0.2)", padding: "16px 24px", borderRadius: "var(--radius-lg)", border: "1px solid rgba(255,255,255,0.07)" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, color: "#22c55e", letterSpacing: "-2px" }}>{animatedProgress}%</div>
+          <div className="hero-progress" style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, color: "#22c55e", letterSpacing: "-2px" }}>{animatedProgress}%</div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Overall Complete</div>
         </div>
         <div style={{ width: 1, height: 48, background: "rgba(255,255,255,0.08)" }} />
@@ -196,7 +198,7 @@ function HeroBanner({ projectMeta }: { projectMeta: { projectName: string; lastU
   );
 }
 
-function DashboardContent() {
+function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; setSidebarOpen: (open: boolean) => void }) {
   const params = useSearchParams();
   const moduleSelected = Boolean(params.get("module"));
   const { data, loading, error, refresh } = useSheetData();
@@ -207,9 +209,9 @@ function DashboardContent() {
   if (loading) {
     return (
       <div className="app-shell">
-        <Sidebar />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="main-content">
-          <Topbar />
+          <Topbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
           <main className="page-content" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
               {/* Layered rings */}
@@ -243,9 +245,9 @@ function DashboardContent() {
   if (error || !data) {
     return (
       <div className="app-shell">
-        <Sidebar />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="main-content">
-          <Topbar />
+          <Topbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
           <main className="page-content" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
             <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
               <div style={{ fontSize: 40 }}>⚠️</div>
@@ -275,9 +277,15 @@ function DashboardContent() {
 
   return (
     <div className="app-shell">
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <div className="main-content">
-        <Topbar />
+        <Topbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
         <main
           ref={mainRef as React.RefObject<HTMLElement>}
           className="page-content"
@@ -330,14 +338,14 @@ function DashboardContent() {
             <ModuleDetailsPanel />
 
             {/* Main Content Row */}
-            <div className="chart-grid">
-              <div className="glass-card fade-in fade-in-2">
+            <div className="dashboard-content-wrapper">
+              <div className="glass-card fade-in fade-in-2 module-progress-card">
                 <div className="card-header">
                   <div>
                     <p className="section-title">Module Progress</p>
                     <p className="section-subtitle">Feature completion status per module</p>
                   </div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <div className="module-legend" style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     {(["completed","ongoing","hold","cancelled","pending"] as const).map((k) => (
                       <div key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--text-muted)" }}>
                         <span style={{ width: 8, height: 8, borderRadius: 2, background: STATUS_META[k].color, display: "inline-block" }} />
@@ -347,40 +355,54 @@ function DashboardContent() {
                   </div>
                 </div>
                 <div className="card-body" style={{ paddingTop: 12 }}>
-                  <ModuleProgressList moduleData={moduleData} STATUS_META={STATUS_META} />
+                  <div className="module-progress-scroll-wrapper">
+                    <div className="module-progress-scroll-inner">
+                      <ModuleProgressList moduleData={moduleData} STATUS_META={STATUS_META} />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div className="glass-card fade-in fade-in-3">
-                  <div className="card-header">
-                    <p className="card-title">Status Breakdown</p>
-                  </div>
-                  <div className="card-body">
-                    <SummaryDonut
-                      data={summaryDonut}
-                      total={projectMeta.totalTasks}
-                      centerValue={`${projectMeta.overallProgress}%`}
-                      centerLabel="complete"
-                    />
+              <div className="glass-card fade-in fade-in-3 status-breakdown-card">
+                <div className="card-header">
+                  <p className="card-title">Status Breakdown</p>
+                </div>
+                <div className="card-body">
+                  <div className="chart-scroll-wrapper">
+                    <div className="chart-scroll-inner">
+                      <SummaryDonut
+                        data={summaryDonut}
+                        total={projectMeta.totalTasks}
+                        centerValue={`${projectMeta.overallProgress}%`}
+                        centerLabel="complete"
+                      />
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="glass-card fade-in fade-in-4">
-                  <div className="card-header">
-                    <p className="card-title">Top Performers</p>
-                  </div>
-                  <div className="card-body" style={{ paddingTop: 12 }}>
-                    <TopPerformers moduleData={moduleData} />
+              <div className="glass-card fade-in fade-in-4 top-performers-card">
+                <div className="card-header">
+                  <p className="card-title">Top Performers</p>
+                </div>
+                <div className="card-body" style={{ paddingTop: 12 }}>
+                  <div className="chart-scroll-wrapper">
+                    <div className="chart-scroll-inner">
+                      <TopPerformers moduleData={moduleData} />
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="glass-card fade-in fade-in-4">
-                  <div className="card-header">
-                    <p className="card-title">Needs Attention</p>
-                  </div>
-                  <div className="card-body" style={{ paddingTop: 12 }}>
-                    <NeedsAttention moduleData={moduleData} />
+              <div className="glass-card fade-in fade-in-4 needs-attention-card">
+                <div className="card-header">
+                  <p className="card-title">Needs Attention</p>
+                </div>
+                <div className="card-body" style={{ paddingTop: 12 }}>
+                  <div className="chart-scroll-wrapper">
+                    <div className="chart-scroll-inner">
+                      <NeedsAttention moduleData={moduleData} />
+                    </div>
                   </div>
                 </div>
               </div>
