@@ -26,7 +26,7 @@ export default function KpiGrid({ kpis }: { kpis: KPI[] }) {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10, paddingTop: 8 }}>
         <button
           onClick={refresh}
           disabled={loading}

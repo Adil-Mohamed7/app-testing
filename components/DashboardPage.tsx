@@ -12,55 +12,6 @@ import { STATUS_META, ModuleData } from "@/lib/sheetData";
 import { SheetDataProvider, useSheetData } from "@/lib/SheetDataContext";
 import { useCountUp } from "@/lib/useCountUp";
 
-const PULL_THRESHOLD = 80;
-
-function usePullToRefresh(onRefresh: () => void, enabled: boolean) {
-  const ref = useRef<HTMLElement | null>(null);
-  const startY = useRef(0);
-  const pulling = useRef(false);
-  const [pullY, setPullY] = useState(0);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !enabled) return;
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (el.scrollTop === 0) {
-        startY.current = e.touches[0].clientY;
-        pulling.current = true;
-      }
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (!pulling.current) return;
-      const dy = e.touches[0].clientY - startY.current;
-      if (dy > 0) {
-        e.preventDefault();
-        setPullY(Math.min(dy, PULL_THRESHOLD * 1.5));
-      }
-    };
-    const onTouchEnd = () => {
-      if (pulling.current) {
-        setPullY((y) => {
-          if (y >= PULL_THRESHOLD) onRefresh();
-          return 0;
-        });
-        pulling.current = false;
-      }
-    };
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd);
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [enabled, onRefresh]);
-
-  return { ref, pullY };
-}
-
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
   const animated = useCountUp(value);
   return (
@@ -202,9 +153,6 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
   const params = useSearchParams();
   const moduleSelected = Boolean(params.get("module"));
   const { data, loading, error, refresh } = useSheetData();
-  const { ref: mainRef, pullY } = usePullToRefresh(refresh, !loading);
-  const pullProgress = Math.min(pullY / PULL_THRESHOLD, 1);
-  const pullReady = pullY >= PULL_THRESHOLD;
 
   if (loading) {
     return (
@@ -286,56 +234,20 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
       )}
       <div className="main-content">
         <Topbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-        <main
-          ref={mainRef as React.RefObject<HTMLElement>}
-          className="page-content"
-          style={{ position: "relative", overflowY: "auto" }}
-        >
-          {/* Pull-to-refresh indicator */}
-          {pullY > 0 && (
-            <div style={{
-              position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
-              display: "flex", justifyContent: "center", alignItems: "center",
-              height: pullY, overflow: "hidden",
-            }}>
-              <div style={{
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                opacity: pullProgress,
-                transform: `scale(${0.6 + pullProgress * 0.4})`,
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: "50%",
-                  border: "2px solid rgba(59,130,246,0.2)",
-                  borderTop: "2px solid #3b82f6",
-                  animation: pullReady ? "spin 0.6s linear infinite" : "none",
-                  transform: pullReady ? undefined : `rotate(${pullProgress * 270}deg)`,
-                }} />
-                <span style={{ fontSize: 11, color: "#60a5fa", fontWeight: 600 }}>
-                  {pullReady ? "Release to refresh" : "Pull to refresh"}
-                </span>
-              </div>
-            </div>
+        <main className="page-content">
+          {!moduleSelected && (
+            <HeroBanner projectMeta={projectMeta} />
           )}
 
-          {/* Content shifts down while pulling */}
-          <div style={{
-            transform: pullY > 0 ? `translateY(${pullY}px)` : undefined,
-            transition: pullY === 0 ? "transform 0.3s ease" : undefined,
-          }}>
+          {/* KPI Cards or Overall Summary */}
+          {moduleSelected ? (
+            <OverallSummaryBar moduleData={moduleData} />
+          ) : (
+            <KpiGrid kpis={topKPIs} />
+          )}
 
-            {!moduleSelected && (
-              <HeroBanner projectMeta={projectMeta} />
-            )}
-
-            {/* KPI Cards or Overall Summary */}
-            {moduleSelected ? (
-              <OverallSummaryBar moduleData={moduleData} />
-            ) : (
-              <KpiGrid kpis={topKPIs} />
-            )}
-
-            {/* Selected Module Details */}
-            <ModuleDetailsPanel />
+          {/* Selected Module Details */}
+          <ModuleDetailsPanel />
 
             {/* Main Content Row */}
             <div className="dashboard-content-wrapper">
@@ -407,8 +319,6 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
                 </div>
               </div>
             </div>
-
-          </div>
         </main>
       </div>
     </div>
