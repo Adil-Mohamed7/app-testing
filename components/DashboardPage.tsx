@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
 import KpiGrid from "@/components/KpiGrid";
 import ModuleProgressList from "@/components/ModuleProgressList";
 import SummaryDonut from "@/components/SummaryDonut";
 import ModuleDetailsPanel from "@/components/ModuleDetailsPanel";
+import BranchStats from "@/components/BranchStats";
+import ManagementState from "@/components/ManagementState";
 import { useSearchParams } from "next/navigation";
 import { STATUS_META, ModuleData } from "@/lib/sheetData";
 import { SheetDataProvider, useSheetData } from "@/lib/SheetDataContext";
@@ -32,7 +34,7 @@ export default function DashboardPage() {
   );
 }
 
-function TopPerformers({ moduleData }: { moduleData: ModuleData[] }) {
+function HighestCompletion({ moduleData }: { moduleData: ModuleData[] }) {
   const top = [...moduleData]
     .filter((m) => m.total > 0)
     .sort((a, b) => b.progress - a.progress)
@@ -54,7 +56,7 @@ function TopPerformers({ moduleData }: { moduleData: ModuleData[] }) {
   );
 }
 
-function NeedsAttention({ moduleData }: { moduleData: ModuleData[] }) {
+function TestingNeedsAttention({ moduleData }: { moduleData: ModuleData[] }) {
   const needsAttention = [...moduleData]
     .filter((m) => m.total > 0)
     .sort((a, b) => a.progress - b.progress)
@@ -107,7 +109,7 @@ function OverallSummaryBar({ moduleData }: { moduleData: ModuleData[] }) {
           <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Avg Progress</div>
         </div>
       </div>
-      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Project overview across all modules</div>
+      <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Testing overview across all modules</div>
     </div>
   );
 }
@@ -130,19 +132,19 @@ function HeroBanner({ projectMeta }: { projectMeta: { projectName: string; lastU
           <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", background: "rgba(34,197,94,0.12)", color: "#22c55e", borderRadius: 20, border: "1px solid rgba(34,197,94,0.2)" }}>ACTIVE</span>
         </div>
         <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
-          Project progress overview across all modules · Last updated {projectMeta.lastUpdated}
+          Total overview of testing progress across all modules · Last updated {projectMeta.lastUpdated}
         </p>
       </div>
       <div className="hero-stats" style={{ display: "flex", alignItems: "center", gap: 20, flexShrink: 0, background: "rgba(0,0,0,0.2)", padding: "16px 24px", borderRadius: "var(--radius-lg)", border: "1px solid rgba(255,255,255,0.07)" }}>
         <div style={{ textAlign: "center" }}>
           <div className="hero-progress" style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, color: "#22c55e", letterSpacing: "-2px" }}>{animatedProgress}%</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Overall Complete</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Testing Complete</div>
         </div>
         <div style={{ width: 1, height: 48, background: "rgba(255,255,255,0.08)" }} />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <Stat label="Total" value={projectMeta.totalTasks} color="var(--text-primary)" />
-          <Stat label="Done"  value={projectMeta.completed} color="#22c55e" />
-          <Stat label="Left"  value={projectMeta.pending} color="#f59e0b" />
+          <Stat label="Completed"  value={projectMeta.completed} color="#22c55e" />
+          <Stat label="Pending"  value={projectMeta.pending} color="#f59e0b" />
         </div>
       </div>
     </div>
@@ -190,31 +192,14 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
     );
   }
 
-  if (error || !data) {
+  if (error || !data || data.moduleData.length === 0 || data.projectMeta.totalTasks === 0) {
     return (
       <div className="app-shell">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="main-content">
           <Topbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
           <main className="page-content" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
-            <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-              <div style={{ fontSize: 40 }}>⚠️</div>
-              <div>
-                <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>Failed to load sheet data</p>
-                <p style={{ fontSize: 13, color: "var(--text-muted)", maxWidth: 340 }}>{error ?? "Unable to connect to Google Sheets."}</p>
-              </div>
-              <button
-                onClick={refresh}
-                style={{
-                  marginTop: 8, padding: "9px 22px", borderRadius: 20,
-                  background: "rgba(59,130,246,0.15)",
-                  border: "1px solid rgba(59,130,246,0.3)",
-                  color: "#60a5fa", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                ↻ Try again
-              </button>
-            </div>
+            <ManagementState actionLabel="Refresh dashboard" onAction={refresh} />
           </main>
         </div>
       </div>
@@ -249,13 +234,16 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
           {/* Selected Module Details */}
           <ModuleDetailsPanel />
 
+          {/* Branch Statistics */}
+          <BranchStats branchData={data.branchData} />
+
             {/* Main Content Row */}
             <div className="dashboard-content-wrapper">
               <div className="glass-card fade-in fade-in-2 module-progress-card">
                 <div className="card-header">
                   <div>
-                    <p className="section-title">Module Progress</p>
-                    <p className="section-subtitle">Feature completion status per module</p>
+                    <p className="section-title">Module Testing Progress</p>
+                    <p className="section-subtitle">Testing status by module</p>
                   </div>
                   <div className="module-legend" style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     {(["completed","ongoing","hold","cancelled","pending"] as const).map((k) => (
@@ -277,7 +265,7 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
 
               <div className="glass-card fade-in fade-in-3 status-breakdown-card">
                 <div className="card-header">
-                  <p className="card-title">Status Breakdown</p>
+                  <p className="card-title">Testing Status Breakdown</p>
                 </div>
                 <div className="card-body">
                   <div className="chart-scroll-wrapper">
@@ -295,12 +283,12 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
 
               <div className="glass-card fade-in fade-in-4 top-performers-card">
                 <div className="card-header">
-                  <p className="card-title">Top Performers</p>
+                  <p className="card-title">Highest Completion</p>
                 </div>
                 <div className="card-body" style={{ paddingTop: 12 }}>
                   <div className="chart-scroll-wrapper">
                     <div className="chart-scroll-inner">
-                      <TopPerformers moduleData={moduleData} />
+                      <HighestCompletion moduleData={moduleData} />
                     </div>
                   </div>
                 </div>
@@ -308,12 +296,12 @@ function DashboardContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolea
 
               <div className="glass-card fade-in fade-in-4 needs-attention-card">
                 <div className="card-header">
-                  <p className="card-title">Needs Attention</p>
+                  <p className="card-title">Testing Needs Attention</p>
                 </div>
                 <div className="card-body" style={{ paddingTop: 12 }}>
                   <div className="chart-scroll-wrapper">
                     <div className="chart-scroll-inner">
-                      <NeedsAttention moduleData={moduleData} />
+                      <TestingNeedsAttention moduleData={moduleData} />
                     </div>
                   </div>
                 </div>

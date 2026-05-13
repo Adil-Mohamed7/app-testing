@@ -27,11 +27,55 @@ function getSheetsClient() {
 export async function GET() {
   try {
     const sheets = getSheetsClient();
+    
+    // Fetch main module data
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: sheetConfig.tableRange,
     });
-    return NextResponse.json({ values: response.data.values || [] });
+    
+    // Fetch branch data
+    let branchValues: unknown[][] = [];
+    try {
+      const branchResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: sheetConfig.branchTableRange,
+      });
+      branchValues = branchResponse.data.values || [];
+    } catch (branchErr) {
+      console.warn("[/api/sheets] Branch data not found, continuing without it");
+    }
+
+    // Fetch device testing data
+    let deviceValues: unknown[][] = [];
+    try {
+      const deviceResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: sheetConfig.deviceTestingRange,
+      });
+      deviceValues = deviceResponse.data.values || [];
+    } catch (deviceErr) {
+      console.warn("[/api/sheets] Device testing data not found, continuing without it");
+    }
+
+    // Fetch master branchwise testing (sales closing)
+    let masterValues: unknown[][] = [];
+    try {
+      const masterResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: sheetConfig.masterBranchRange,
+      });
+      masterValues = masterResponse.data.values || [];
+    } catch (masterErr) {
+      console.warn("[/api/sheets] Master branchwise testing data not found, continuing without it");
+    }
+    
+    return NextResponse.json({ 
+      values: response.data.values || [],
+      branchValues,
+      deviceValues,
+      masterValues
+    });
   } catch (err: any) {
     console.error("[/api/sheets]", err?.message ?? err);
     return NextResponse.json({ error: err?.message ?? "Unknown error" }, { status: 500 });

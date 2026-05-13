@@ -2,13 +2,21 @@
 
 import { useState } from "react";
 
-export default function Topbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
+export default function Topbar({
+  onMenuToggle,
+  onMenuClick,
+  title = "Test Dashboard",
+}: {
+  onMenuToggle?: () => void;
+  onMenuClick?: () => void;
+  title?: string;
+}) {
   return (
     <header className="topbar">
       <div className="topbar-left">
         <button
           className="mobile-menu-btn"
-          onClick={onMenuToggle}
+          onClick={onMenuClick || onMenuToggle}
           style={{
             display: "none",
             alignItems: "center",
@@ -26,7 +34,7 @@ export default function Topbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           ☰
         </button>
         <div>
-          <h1>Test Dashboard</h1>
+          <h1>{title}</h1>
           <p className="breadcrumb">Overview · All Environments · Last 15 days</p>
         </div>
       </div>

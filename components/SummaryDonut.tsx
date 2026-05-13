@@ -32,25 +32,39 @@ export default function SummaryDonut({
   centerValue: string;
   centerLabel: string;
 }) {
+  const hasData = data && data.length > 0 && data.some(d => d.value > 0);
+  
   return (
     <div>
       <div style={{ position: "relative" }}>
         <ResponsiveContainer width="100%" height={180}>
           <PieChart>
-            <Pie
-              data={data}
-              cx="50%" cy="50%"
-              innerRadius={55} outerRadius={78}
-              paddingAngle={2}
-              dataKey="value"
-              strokeWidth={0}
-              startAngle={90}
-              endAngle={-270}
-            >
-              {data.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
-              ))}
-            </Pie>
+            {hasData ? (
+              <Pie
+                data={data}
+                cx="50%" cy="50%"
+                innerRadius={55} outerRadius={78}
+                paddingAngle={2}
+                dataKey="value"
+                strokeWidth={0}
+                startAngle={90}
+                endAngle={-270}
+              >
+                {data.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Pie>
+            ) : (
+              <Pie
+                data={[{ name: "No data", value: 1, color: "#475569" }]}
+                cx="50%" cy="50%"
+                innerRadius={55} outerRadius={78}
+                strokeWidth={0}
+                dataKey="value"
+              >
+                <Cell fill="#475569" />
+              </Pie>
+            )}
             <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
@@ -64,7 +78,7 @@ export default function SummaryDonut({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 4 }}>
-        {data.map((d) => (
+        {data.filter(d => d.value > 0).map((d) => (
           <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
             <span style={{ width: 9, height: 9, borderRadius: "50%", background: d.color, flexShrink: 0, display: "inline-block" }} />
             <span style={{ color: "#94a3b8", flex: 1 }}>{d.name}</span>

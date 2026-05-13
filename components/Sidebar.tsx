@@ -2,23 +2,25 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import SidebarModuleList from "./SidebarModuleList";
+import DeviceTestingSidebarWidget from "./DeviceTestingSidebarWidget";
 
 const NAV_ITEMS = [
-  { icon: "📊", label: "Reports", active: false },
-  { icon: "🔔", label: "Alerts", active: false },
+  { icon: "🧾", label: "Sales Closing", active: false },
 ];
 
 const INTEGRATIONS = [
-  { icon: "📋", label: "Google Sheets", active: false },
   { icon: "⚙️", label: "Settings",      active: false },
 ];
 
 export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const [modulesOpen, setModulesOpen] = useState(true);
   const params = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const moduleSelected = Boolean(params.get("module"));
+  const isDeviceTestingPage = pathname === "/device-testing";
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -63,7 +65,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         <span className="nav-label">Main</span>
         <button
           type="button"
-          className={`nav-item${!moduleSelected ? " active" : ""}`}
+          className={`nav-item${!moduleSelected && !isDeviceTestingPage ? " active" : ""}`}
           onClick={() => {
             router.push("/", { scroll: false });
             onClose?.();
@@ -74,10 +76,33 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
             <span className="nav-icon">▦</span>
             Dashboard
           </span>
-          {!moduleSelected && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
+          {!moduleSelected && !isDeviceTestingPage && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
         </button>
+        
+        <button
+          type="button"
+          className={`nav-item${isDeviceTestingPage ? " active" : ""}`}
+          onClick={() => {
+            router.push("/device-testing", { scroll: false });
+            onClose?.();
+          }}
+          style={{ justifyContent: "space-between" }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="nav-icon">🔧</span>
+            Device Testing
+          </span>
+          {isDeviceTestingPage && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
+        </button>
+        
         {NAV_ITEMS.map((item) => (
-          <a key={item.label} className={`nav-item${item.active ? " active" : ""}`} href="#" onClick={onClose}>
+          <a key={item.label} className={`nav-item${item.label === "Sales Closing" && pathname === "/sales" ? " active" : ""}`} href="#" onClick={(e) => {
+            e.preventDefault();
+            if (item.label === "Sales Closing") {
+              router.push("/sales");
+            }
+            onClose?.();
+          }} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "inherit" }}>
             <span className="nav-icon">{item.icon}</span>
             {item.label}
           </a>
@@ -102,6 +127,8 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         }>
           {modulesOpen && <div style={{ paddingLeft: 6, paddingTop: 4 }}><SidebarModuleList onItemClick={onClose} /></div>}
         </Suspense>
+
+
 
         {/* Integrations */}
         <span className="nav-label" style={{ marginTop: 16 }}>Integrations</span>
