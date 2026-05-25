@@ -41,6 +41,17 @@ type ExecutiveRow = CategoryCountMap & {
   latest?: string;
 };
 
+type SalesEntry = SalesSummary["entries"][number];
+
+type BranchSummary = {
+  key: string;
+  label: string;
+  total: number;
+  completed: number;
+  completionRate: number;
+  routeTeams: number;
+};
+
 const CATEGORY_META: Record<CategoryKey, { label: string; short: string; color: string; tone: string }> = {
   completed: { label: "Completed", short: "Done", color: "#22c55e", tone: "green" },
   dnu: { label: "Data Not Updated", short: "Data Not Updated", color: "#ef4444", tone: "red" },
@@ -81,6 +92,10 @@ function formatName(name: string): string {
     .join(" ");
 }
 
+function normalizeBranchKey(branch: string): string {
+  return String(branch || "").trim().toLowerCase();
+}
+
 function categorizeStatus(raw: string): CategoryKey {
   const status = String(raw || "").trim();
   const s = status.toLowerCase();
@@ -98,12 +113,36 @@ function categorizeStatus(raw: string): CategoryKey {
   return "other";
 }
 
-function buildCategoryCounts(rawCounts: Record<string, number> = {}): CategoryCountMap {
+function buildCategoryCountsFromEntries(entries: SalesEntry[], selectedDate: string | null): CategoryCountMap {
   const counts = emptyCategoryCounts();
-  for (const [status, value] of Object.entries(rawCounts)) {
-    counts[categorizeStatus(status)] += Number(value || 0);
+  if (!selectedDate) return counts;
+
+  for (const entry of entries) {
+    const raw = entry.statusesByDate[selectedDate];
+    if (!raw) continue;
+    counts[categorizeStatus(raw)] += 1;
   }
+
   return counts;
+}
+
+function summarizeBranch(entries: SalesEntry[], selectedDate: string | null, key: string, label: string): BranchSummary {
+  const counts = buildCategoryCountsFromEntries(entries, selectedDate);
+  const total = CATEGORY_ORDER.reduce((sum, category) => sum + counts[category], 0);
+  const routeTeams = new Set(
+    selectedDate
+      ? entries.filter((entry) => entry.statusesByDate[selectedDate]).map((entry) => entry.executive)
+      : entries.map((entry) => entry.executive),
+  ).size;
+
+  return {
+    key,
+    label,
+    total,
+    completed: counts.completed,
+    completionRate: total ? Math.round((counts.completed / total) * 100) : 0,
+    routeTeams,
+  };
 }
 
 function parseSheetDate(dateLabel: string): Date | null {
@@ -164,12 +203,11 @@ function summarizeRow(executive: string, counts: CategoryCountMap, latest?: stri
 
 function rankExecutiveRows(rows: ExecutiveRow[], category: CategoryKey, mode: "most" | "least"): ExecutiveRow[] {
   return [...rows]
-    .filter((row) => row.total > 0)
+    .filter((row) => row.total > 0 && (mode === "least" || row[category] > 0))
     .sort((a, b) => {
       const diff = mode === "most" ? b[category] - a[category] : a[category] - b[category];
       return diff || b.total - a.total || a.executive.localeCompare(b.executive);
-    })
-    .slice(0, 8);
+    });
 }
 
 function SalesKpi({ label, value, accent, caption }: { label: string; value: string | number; accent: string; caption: string }) {
@@ -219,6 +257,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState("all");
   const [rankingCategory, setRankingCategory] = useState<CategoryKey>("completed");
   const [rankingMode, setRankingMode] = useState<"most" | "least">("most");
 
@@ -249,12 +288,45 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
     };
   }, []);
 
-  const statusCounts = useMemo(() => {
-    if (!data || !selectedDate) return {};
-    return data.perDateCounts[selectedDate] || {};
-  }, [data, selectedDate]);
+  const branchOptions = useMemo(() => {
+    if (!data) return [];
+    const options = new Map<string, string>();
+    for (const entry of data.entries) {
+      const key = normalizeBranchKey(entry.region);
+      if (!key || key === "all") continue;
+      if (!options.has(key)) options.set(key, entry.region.trim());
+    }
+    return Array.from(options.entries())
+      .map(([key, label]) => ({ key, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [data]);
 
-  const categoryCounts = useMemo(() => buildCategoryCounts(statusCounts), [statusCounts]);
+  const scopedEntries = useMemo(() => {
+    if (!data) return [];
+    if (selectedBranch === "all") return data.entries;
+    return data.entries.filter((entry) => normalizeBranchKey(entry.region) === selectedBranch);
+  }, [data, selectedBranch]);
+
+  const selectedBranchLabel = useMemo(() => {
+    if (selectedBranch === "all") return "All Branches";
+    return branchOptions.find((branch) => branch.key === selectedBranch)?.label || "Selected Branch";
+  }, [branchOptions, selectedBranch]);
+
+  const branchSummaries = useMemo(() => {
+    if (!data) return [];
+    const allSummary = summarizeBranch(data.entries, selectedDate, "all", "All Branches");
+    const perBranch = branchOptions.map((branch) =>
+      summarizeBranch(
+        data.entries.filter((entry) => normalizeBranchKey(entry.region) === branch.key),
+        selectedDate,
+        branch.key,
+        branch.label,
+      ),
+    );
+    return [allSummary, ...perBranch];
+  }, [branchOptions, data, selectedDate]);
+
+  const categoryCounts = useMemo(() => buildCategoryCountsFromEntries(scopedEntries, selectedDate), [scopedEntries, selectedDate]);
   const totalForSelected = useMemo(() => CATEGORY_ORDER.reduce((sum, key) => sum + categoryCounts[key], 0), [categoryCounts]);
 
   const categoryChartData = useMemo(
@@ -273,7 +345,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
     const grouped = new Map<string, CategoryCountMap>();
     const latest = new Map<string, string>();
 
-    for (const entry of data.entries) {
+    for (const entry of scopedEntries) {
       const raw = entry.statusesByDate[selectedDate];
       if (!raw) continue;
       const current = grouped.get(entry.executive) || emptyCategoryCounts();
@@ -285,7 +357,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
     return Array.from(grouped.entries())
       .map(([executive, counts]) => summarizeRow(executive, counts, latest.get(executive)))
       .sort((a, b) => b.completed - a.completed || b.completionRate - a.completionRate || a.executive.localeCompare(b.executive));
-  }, [data, selectedDate]);
+  }, [data, scopedEntries, selectedDate]);
 
   const defaultCutoffDate = useMemo(() => (data ? getDefaultSalesDate(data.dates) : null), [data]);
 
@@ -295,7 +367,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
     const grouped = new Map<string, CategoryCountMap>();
     const latest = new Map<string, string>();
 
-    for (const entry of data.entries) {
+    for (const entry of scopedEntries) {
       for (const date of data.dates) {
         const parsedDate = parseSheetDate(date);
         if (cutoff && parsedDate && startOfDay(parsedDate).getTime() > startOfDay(cutoff).getTime()) continue;
@@ -313,7 +385,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
     return Array.from(grouped.entries())
       .map(([executive, counts]) => summarizeRow(executive, counts, latest.get(executive)))
       .sort((a, b) => b.completed - a.completed || b.completionRate - a.completionRate || a.executive.localeCompare(b.executive));
-  }, [data, defaultCutoffDate]);
+  }, [data, defaultCutoffDate, scopedEntries]);
 
   const selectedRankedRows = useMemo(() => rankExecutiveRows(executiveRows, rankingCategory, rankingMode), [executiveRows, rankingCategory, rankingMode]);
   const combinedRankedRows = useMemo(() => rankExecutiveRows(combinedRows, rankingCategory, rankingMode), [combinedRows, rankingCategory, rankingMode]);
@@ -386,8 +458,33 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
             </div>
           </section>
 
+          <section className="sales-branch-filter-card glass-card">
+            <div className="card-header">
+              <div>
+                <p className="section-title">Branchwise Results</p>
+                <p className="section-subtitle">Filter the full page by all branches or one branch</p>
+              </div>
+            </div>
+            <div className="card-body">
+              <div className="sales-branch-filter-grid">
+                {branchSummaries.map((branch) => (
+                  <button
+                    className={`sales-branch-filter ${selectedBranch === branch.key ? "active" : ""}`}
+                    key={branch.key}
+                    onClick={() => setSelectedBranch(branch.key)}
+                    type="button"
+                  >
+                    <span>{branch.label}</span>
+                    <strong>{branch.completed}/{branch.total}</strong>
+                    <em>{branch.completionRate}% done · {branch.routeTeams} route teams</em>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
           <section className="sales-kpi-grid">
-            <SalesKpi label="Total Test Records" value={totalForSelected} accent="#3b82f6" caption={selectedDate || "Selected date"} />
+            <SalesKpi label="Total Test Records" value={totalForSelected} accent="#3b82f6" caption={`${selectedBranchLabel} · ${selectedDate || "Selected date"}`} />
             <SalesKpi label="Completed" value={categoryCounts.completed} accent="#22c55e" caption={`${completionRate}% completion rate`} />
             <SalesKpi label="Data Not Updated" value={categoryCounts.dnu} accent="#ef4444" caption="Not updated entries" />
             <SalesKpi label="Executives Reviewed" value={activeExecutives} accent="#06b6d4" caption={`${combinedRows.length} in overall progress view`} />
@@ -398,7 +495,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
               <div className="card-header">
                 <div>
                   <p className="section-title">Testing Status Overview</p>
-                  <p className="section-subtitle">Management view of testing status categories</p>
+                  <p className="section-subtitle">Management view for {selectedBranchLabel}</p>
                 </div>
               </div>
               <div className="card-body">
@@ -458,7 +555,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
               <div className="card-header">
                 <div>
                   <p className="section-title">Testing Category Volume</p>
-                  <p className="section-subtitle">Compare category counts for the selected date</p>
+                  <p className="section-subtitle">Compare category counts for {selectedBranchLabel}</p>
                 </div>
               </div>
               <div className="card-body">
@@ -494,7 +591,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
               <div className="card-header sales-ranking-header">
                 <div>
                   <p className="section-title">Executive Testing Rankings</p>
-                  <p className="section-subtitle">Daily performance beside overall progress through {defaultCutoffDate || "latest available"}</p>
+                  <p className="section-subtitle">Best completed rankings update with the selected branch</p>
                 </div>
                 <div className="sales-ranking-controls">
                   <select value={rankingCategory} onChange={(event) => setRankingCategory(event.target.value as CategoryKey)}>
@@ -513,14 +610,14 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
                   <div>
                     <div className="sales-ranking-scope">
                       <span>Daily Performance</span>
-                      <strong>{selectedDate || "-"}</strong>
+                      <strong>{selectedBranchLabel} · {selectedDate || "-"}</strong>
                     </div>
                     <RankingList rows={selectedRankedRows} metric={rankingCategory} emptyText="No executives found for this date." />
                   </div>
                   <div>
                     <div className="sales-ranking-scope">
                       <span>Overall Progress</span>
-                      <strong>Through {defaultCutoffDate || "-"}</strong>
+                      <strong>{selectedBranchLabel} · Through {defaultCutoffDate || "-"}</strong>
                     </div>
                     <RankingList rows={combinedRankedRows} metric={rankingCategory} emptyText="No overall ranking available." />
                   </div>
@@ -533,7 +630,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
             <div className="card-header">
               <div>
                 <p className="section-title">Executive Testing Summary</p>
-                <p className="section-subtitle">Selected date testing counts by category</p>
+                <p className="section-subtitle">Selected date testing counts by category for {selectedBranchLabel}</p>
               </div>
             </div>
             <div className="card-body">
