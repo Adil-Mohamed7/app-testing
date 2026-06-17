@@ -46,10 +46,14 @@ type SalesEntry = SalesSummary["entries"][number];
 type BranchSummary = {
   key: string;
   label: string;
-  total: number;
-  completed: number;
+  totalItems: number;
+  completedItems: number;
+  totalRoutes: number;
+  completedRoutes: number;
+  totalExecutives: number;
+  completedExecutives: number;
+  entryMistakes: number;
   completionRate: number;
-  routeTeams: number;
 };
 
 const CATEGORY_META: Record<CategoryKey, { label: string; short: string; color: string; tone: string }> = {
@@ -93,7 +97,37 @@ function formatName(name: string): string {
 }
 
 function normalizeBranchKey(branch: string): string {
-  return String(branch || "").trim().toLowerCase();
+  const normalized = String(branch || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+
+  if (!normalized) return "";
+  if (normalized.includes("abudhabi") || normalized === "auh") return "abu-dhabi";
+  if (normalized.includes("dubai") || normalized === "dxb") return "dubai";
+  if (normalized.includes("alain")) return "al-ain";
+  if (normalized.includes("sharjah") || normalized.includes("sharja")) return "sharjah";
+  if (normalized.includes("fujairah") || normalized.includes("fujariah") || normalized.includes("fujeirah")) return "fujairah";
+  if (normalized.includes("ajman")) return "ajman";
+  if (normalized.includes("rak") || normalized.includes("rasalkhaimah")) return "ras-al-khaimah";
+  if (normalized.includes("uaq") || normalized.includes("ummalquwain")) return "umm-al-quwain";
+  return normalized;
+}
+
+function formatBranchLabel(branch: string): string {
+  const key = normalizeBranchKey(branch);
+  const labels: Record<string, string> = {
+    "abu-dhabi": "Abu Dhabi",
+    dubai: "Dubai",
+    "al-ain": "Al Ain",
+    sharjah: "Sharjah",
+    fujairah: "Fujairah",
+    ajman: "Ajman",
+    "ras-al-khaimah": "Ras Al Khaimah",
+    "umm-al-quwain": "Umm Al Quwain",
+  };
+
+  return labels[key] || formatName(branch);
 }
 
 function categorizeStatus(raw: string): CategoryKey {
@@ -101,7 +135,6 @@ function categorizeStatus(raw: string): CategoryKey {
   const s = status.toLowerCase();
 
   if (!s) return "other";
-  if (/completed|complete|\bdone\b/.test(s)) return "completed";
   if (/\bdnu\b|data not updated|not updated/.test(s)) return "dnu";
   if (/\bups\b|\bup\b|update pending|updated pending/.test(s)) return "ups";
   if (/\bnot done\b|notdone/.test(s)) return "notDone";
@@ -109,8 +142,18 @@ function categorizeStatus(raw: string): CategoryKey {
   if (/\binc\b|incomplete/.test(s)) return "incomplete";
   if (/absent/.test(s)) return "absent";
   if (/vacation|leave/.test(s)) return "vacation";
+  if (/^completed?$|^\bdone\b$/.test(s)) return "completed";
   if (/al ain|alain/.test(s)) return "alAin";
   return "other";
+}
+
+function isSalesExecutiveModule(moduleName: string): boolean {
+  const normalized = String(moduleName || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+
+  return normalized === "salesexecutive" || normalized === "salesexecutives";
 }
 
 function buildCategoryCountsFromEntries(entries: SalesEntry[], selectedDate: string | null): CategoryCountMap {
@@ -128,20 +171,27 @@ function buildCategoryCountsFromEntries(entries: SalesEntry[], selectedDate: str
 
 function summarizeBranch(entries: SalesEntry[], selectedDate: string | null, key: string, label: string): BranchSummary {
   const counts = buildCategoryCountsFromEntries(entries, selectedDate);
-  const total = CATEGORY_ORDER.reduce((sum, category) => sum + counts[category], 0);
-  const routeTeams = new Set(
-    selectedDate
-      ? entries.filter((entry) => entry.statusesByDate[selectedDate]).map((entry) => entry.executive)
-      : entries.map((entry) => entry.executive),
-  ).size;
+  const countableEntries = entries.filter((entry) => entry.module || entry.executive);
+  const executiveEntries = countableEntries.filter((entry) => isSalesExecutiveModule(entry.module));
+  const routeEntries = countableEntries.filter((entry) => !isSalesExecutiveModule(entry.module));
+  const isCompletedForDate = (entry: SalesEntry) =>
+    selectedDate ? categorizeStatus(entry.statusesByDate[selectedDate]) === "completed" : false;
+  const completedRoutes = routeEntries.filter(isCompletedForDate).length;
+  const completedExecutives = executiveEntries.filter(isCompletedForDate).length;
+  const totalItems = routeEntries.length + executiveEntries.length;
+  const completedItems = completedRoutes + completedExecutives;
 
   return {
     key,
     label,
-    total,
-    completed: counts.completed,
-    completionRate: total ? Math.round((counts.completed / total) * 100) : 0,
-    routeTeams,
+    totalItems,
+    completedItems,
+    totalRoutes: routeEntries.length,
+    completedRoutes,
+    totalExecutives: executiveEntries.length,
+    completedExecutives,
+    entryMistakes: counts.entryMistake,
+    completionRate: totalItems ? Math.round((completedItems / totalItems) * 100) : 0,
   };
 }
 
@@ -168,24 +218,43 @@ function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function getDefaultSalesDate(dates: string[]): string | null {
-  if (dates.length === 0) return null;
+function toInputDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
-  const today = startOfDay(new Date());
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+function getTodayInputDate(): string {
+  return toInputDateValue(new Date());
+}
 
+function findSheetDateLabel(dates: string[], inputDate: string): string | null {
+  if (!inputDate) return null;
+  const selected = new Date(`${inputDate}T00:00:00`);
+  if (Number.isNaN(selected.getTime())) return null;
+  const selectedTime = startOfDay(selected).getTime();
+
+  return dates.find((label) => {
+    const parsed = parseSheetDate(label);
+    return parsed ? startOfDay(parsed).getTime() === selectedTime : false;
+  }) || null;
+}
+
+function getLatestSheetDateLabel(dates: string[]): string | null {
   const parsedDates = dates
     .map((label, index) => ({ label, index, date: parseSheetDate(label) }))
-    .filter((item): item is { label: string; index: number; date: Date } => Boolean(item.date));
-
-  const previousOrYesterday = parsedDates
-    .filter((item) => startOfDay(item.date).getTime() <= yesterday.getTime())
+    .filter((item): item is { label: string; index: number; date: Date } => Boolean(item.date))
     .sort((a, b) => b.date.getTime() - a.date.getTime() || b.index - a.index);
 
-  if (previousOrYesterday.length > 0) return previousOrYesterday[0].label;
-  if (parsedDates.length > 0) return parsedDates.sort((a, b) => a.date.getTime() - b.date.getTime())[0].label;
-  return dates[dates.length - 1];
+  return parsedDates[0]?.label || dates[dates.length - 1] || null;
+}
+
+function formatInputDateForDisplay(inputDate: string): string {
+  if (!inputDate) return "selected date";
+  const parsed = new Date(`${inputDate}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return inputDate;
+  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function summarizeRow(executive: string, counts: CategoryCountMap, latest?: string): ExecutiveRow {
@@ -223,28 +292,89 @@ function SalesKpi({ label, value, accent, caption }: { label: string; value: str
   );
 }
 
+type RankingGroup = {
+  value: number;
+  rows: ExecutiveRow[];
+};
+
+function groupRankedRows(rows: ExecutiveRow[], metric: CategoryKey): RankingGroup[] {
+  const groups: RankingGroup[] = [];
+
+  for (const row of rows) {
+    const value = Number(row[metric]);
+    const latestGroup = groups[groups.length - 1];
+    if (latestGroup && latestGroup.value === value) {
+      latestGroup.rows.push(row);
+    } else {
+      groups.push({ value, rows: [row] });
+    }
+  }
+
+  return groups;
+}
+
 function RankingList({ rows, metric, emptyText }: { rows: ExecutiveRow[]; metric: CategoryKey; emptyText: string }) {
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [expandedValues, setExpandedValues] = useState<Set<number>>(() => new Set());
+  const groups = useMemo(() => groupRankedRows(rows, metric), [rows, metric]);
+  const visibleGroups = groups.slice(0, visibleCount);
+  const maxValue = Math.max(...groups.map((group) => group.value), 1);
+
+  function toggleGroup(value: number) {
+    setExpandedValues((current) => {
+      const next = new Set(current);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
+
   return (
     <div className="sales-ranking-list">
-      {rows.length > 0 ? (
-        rows.map((row, index) => {
-          const value = row[metric];
-          const barValue = row.total ? Math.round((Number(row[metric]) / row.total) * 100) : 0;
-          return (
-            <div className="sales-ranking-row" key={`${row.executive}-${index}`}>
-              <div className="sales-rank-number">{index + 1}</div>
-              <div className="sales-rank-main">
-                <div className="sales-rank-label">
-                  <span>{formatName(row.executive)}</span>
-                  <strong>{value}</strong>
-                </div>
-                <div className="progress-bar-wrap">
-                  <div className="progress-bar-fill" style={{ width: `${barValue}%`, background: CATEGORY_META[metric].color }} />
+      {groups.length > 0 ? (
+        <>
+          {visibleGroups.map((group, index) => {
+            const isExpanded = expandedValues.has(group.value) || group.rows.length === 1;
+            const primaryRow = group.rows[0];
+            const barValue = Math.round((group.value / maxValue) * 100);
+            return (
+              <div className="sales-ranking-row" key={`${metric}-${group.value}`}>
+                <div className="sales-rank-number">{index + 1}</div>
+                <div className="sales-rank-main">
+                  <button
+                    className="sales-rank-label"
+                    type="button"
+                    onClick={() => group.rows.length > 1 && toggleGroup(group.value)}
+                  >
+                    <span>
+                      {group.rows.length === 1
+                        ? formatName(primaryRow.executive)
+                        : isExpanded
+                          ? `${group.rows.length} tied`
+                          : `${formatName(primaryRow.executive)} +${group.rows.length - 1}`}
+                    </span>
+                    <strong>{group.value}</strong>
+                  </button>
+                  <div className="progress-bar-wrap">
+                    <div className="progress-bar-fill" style={{ width: `${barValue}%`, background: CATEGORY_META[metric].color }} />
+                  </div>
+                  {group.rows.length > 1 && isExpanded && (
+                    <div className="sales-rank-expanded">
+                      {group.rows.map((row) => (
+                        <span key={row.executive}>{formatName(row.executive)}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          );
-        })
+            );
+          })}
+          {visibleCount < groups.length && (
+            <button className="sales-view-more-btn" type="button" onClick={() => setVisibleCount((count) => count + 10)}>
+              View more
+            </button>
+          )}
+        </>
       ) : (
         <div className="sales-empty-state">{emptyText}</div>
       )}
@@ -256,7 +386,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
   const [data, setData] = useState<SalesSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDateInput, setSelectedDateInput] = useState(getTodayInputDate);
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [rankingCategory, setRankingCategory] = useState<CategoryKey>("completed");
   const [rankingMode, setRankingMode] = useState<"most" | "least">("most");
@@ -273,7 +403,6 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
         if (hasSheetFormulaError(json.masterValues || [])) throw new Error("Sheet formula error");
         const parsed = parseMasterBranchwiseData(json.masterValues || []);
         setData(parsed);
-        setSelectedDate(getDefaultSalesDate(parsed.dates));
       })
       .catch((err) => {
         if (!mounted) return;
@@ -290,16 +419,24 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
 
   const branchOptions = useMemo(() => {
     if (!data) return [];
-    const options = new Map<string, string>();
+    const options = new Map<string, { label: string; order: number }>();
     for (const entry of data.entries) {
       const key = normalizeBranchKey(entry.region);
       if (!key || key === "all") continue;
-      if (!options.has(key)) options.set(key, entry.region.trim());
+      if (!options.has(key)) options.set(key, { label: formatBranchLabel(entry.region), order: options.size });
     }
     return Array.from(options.entries())
-      .map(([key, label]) => ({ key, label }))
+      .map(([key, option]) => ({ key, label: option.label, order: option.order }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [data]);
+
+  const selectedSheetDate = useMemo(
+    () => (data ? findSheetDateLabel(data.dates, selectedDateInput) : null),
+    [data, selectedDateInput],
+  );
+  const selectedDateDisplay = useMemo(() => formatInputDateForDisplay(selectedDateInput), [selectedDateInput]);
+  const latestSheetDate = useMemo(() => (data ? getLatestSheetDateLabel(data.dates) : null), [data]);
+  const hasSelectedDateData = Boolean(selectedSheetDate);
 
   const scopedEntries = useMemo(() => {
     if (!data) return [];
@@ -314,19 +451,19 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
 
   const branchSummaries = useMemo(() => {
     if (!data) return [];
-    const allSummary = summarizeBranch(data.entries, selectedDate, "all", "All Branches");
+    const allSummary = summarizeBranch(data.entries, selectedSheetDate, "all", "All Branches");
     const perBranch = branchOptions.map((branch) =>
       summarizeBranch(
         data.entries.filter((entry) => normalizeBranchKey(entry.region) === branch.key),
-        selectedDate,
+        selectedSheetDate,
         branch.key,
         branch.label,
       ),
     );
     return [allSummary, ...perBranch];
-  }, [branchOptions, data, selectedDate]);
+  }, [branchOptions, data, selectedSheetDate]);
 
-  const categoryCounts = useMemo(() => buildCategoryCountsFromEntries(scopedEntries, selectedDate), [scopedEntries, selectedDate]);
+  const categoryCounts = useMemo(() => buildCategoryCountsFromEntries(scopedEntries, selectedSheetDate), [scopedEntries, selectedSheetDate]);
   const totalForSelected = useMemo(() => CATEGORY_ORDER.reduce((sum, key) => sum + categoryCounts[key], 0), [categoryCounts]);
 
   const categoryChartData = useMemo(
@@ -341,13 +478,14 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
   );
 
   const executiveRows = useMemo<ExecutiveRow[]>(() => {
-    if (!data || !selectedDate) return [];
+    if (!data || !selectedSheetDate) return [];
     const grouped = new Map<string, CategoryCountMap>();
     const latest = new Map<string, string>();
 
     for (const entry of scopedEntries) {
-      const raw = entry.statusesByDate[selectedDate];
+      const raw = entry.statusesByDate[selectedSheetDate];
       if (!raw) continue;
+      if (!entry.executive) continue;
       const current = grouped.get(entry.executive) || emptyCategoryCounts();
       current[categorizeStatus(raw)] += 1;
       grouped.set(entry.executive, current);
@@ -357,9 +495,9 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
     return Array.from(grouped.entries())
       .map(([executive, counts]) => summarizeRow(executive, counts, latest.get(executive)))
       .sort((a, b) => b.completed - a.completed || b.completionRate - a.completionRate || a.executive.localeCompare(b.executive));
-  }, [data, scopedEntries, selectedDate]);
+  }, [data, scopedEntries, selectedSheetDate]);
 
-  const defaultCutoffDate = useMemo(() => (data ? getDefaultSalesDate(data.dates) : null), [data]);
+  const defaultCutoffDate = useMemo(() => selectedSheetDate || latestSheetDate, [latestSheetDate, selectedSheetDate]);
 
   const combinedRows = useMemo<ExecutiveRow[]>(() => {
     if (!data) return [];
@@ -374,6 +512,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
 
         const raw = entry.statusesByDate[date];
         if (!raw) continue;
+        if (!entry.executive) continue;
 
         const current = grouped.get(entry.executive) || emptyCategoryCounts();
         current[categorizeStatus(raw)] += 1;
@@ -391,7 +530,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
   const combinedRankedRows = useMemo(() => rankExecutiveRows(combinedRows, rankingCategory, rankingMode), [combinedRows, rankingCategory, rankingMode]);
 
   const completionRate = totalForSelected ? Math.round((categoryCounts.completed / totalForSelected) * 100) : 0;
-  const activeExecutives = executiveRows.length;
+  const selectedBranchSummary = branchSummaries.find((branch) => branch.key === selectedBranch) || branchSummaries[0];
 
   if (loading) {
     return (
@@ -450,19 +589,35 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
             </div>
             <div className="sales-date-control">
               <label htmlFor="sales-date">Date</label>
-              <select id="sales-date" value={selectedDate || ""} onChange={(event) => setSelectedDate(event.target.value)}>
-                {data.dates.map((date) => (
-                  <option key={date} value={date}>{date}</option>
-                ))}
-              </select>
+              <input
+                id="sales-date"
+                type="date"
+                value={selectedDateInput}
+                onChange={(event) => setSelectedDateInput(event.target.value)}
+              />
+              <span>{selectedSheetDate ? `Sheet date: ${selectedSheetDate}` : "No sheet column for this date"}</span>
             </div>
           </section>
+
+          {!hasSelectedDateData && (
+            <section className="sales-no-data-card glass-card">
+              <div>
+                <span className="sales-no-data-icon">!</span>
+              </div>
+              <div>
+                <p className="section-title">Data not available for {selectedDateDisplay}</p>
+                <p className="section-subtitle">
+                  This date is not available in the Master Sheet. Please choose a date that exists in the sheet{latestSheetDate ? `, or check the latest sheet date: ${latestSheetDate}.` : "."}
+                </p>
+              </div>
+            </section>
+          )}
 
           <section className="sales-branch-filter-card glass-card">
             <div className="card-header">
               <div>
                 <p className="section-title">Branchwise Results</p>
-                <p className="section-subtitle">Filter the full page by all branches or one branch</p>
+                <p className="section-subtitle">Select a branch to update the route and executive cards below</p>
               </div>
             </div>
             <div className="card-body">
@@ -475,8 +630,11 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
                     type="button"
                   >
                     <span>{branch.label}</span>
-                    <strong>{branch.completed}/{branch.total}</strong>
-                    <em>{branch.completionRate}% done · {branch.routeTeams} route teams</em>
+                    <strong>{branch.totalItems}</strong>
+                    <div className="sales-branch-card-footer">
+                      <em>{branch.completedItems} completed</em>
+                      <b>{branch.completionRate}%</b>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -484,10 +642,10 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
           </section>
 
           <section className="sales-kpi-grid">
-            <SalesKpi label="Total Test Records" value={totalForSelected} accent="#3b82f6" caption={`${selectedBranchLabel} · ${selectedDate || "Selected date"}`} />
-            <SalesKpi label="Completed" value={categoryCounts.completed} accent="#22c55e" caption={`${completionRate}% completion rate`} />
-            <SalesKpi label="Data Not Updated" value={categoryCounts.dnu} accent="#ef4444" caption="Not updated entries" />
-            <SalesKpi label="Executives Reviewed" value={activeExecutives} accent="#06b6d4" caption={`${combinedRows.length} in overall progress view`} />
+            <SalesKpi label="Routes Completed" value={`${selectedBranchSummary?.completedRoutes || 0}/${selectedBranchSummary?.totalRoutes || 0}`} accent="#22c55e" caption={`${selectedBranchLabel} · ${selectedDateDisplay}`} />
+            <SalesKpi label="Executives Completed" value={`${selectedBranchSummary?.completedExecutives || 0}/${selectedBranchSummary?.totalExecutives || 0}`} accent="#06b6d4" caption="Completed executives in branch" />
+            <SalesKpi label="Entry Mistakes" value={categoryCounts.entryMistake} accent="#8b5cf6" caption="Selected date mistakes" />
+            <SalesKpi label="Completed" value={categoryCounts.completed} accent="#3b82f6" caption={`${completionRate}% completion rate`} />
           </section>
 
           <section className="sales-dashboard-grid">
@@ -610,16 +768,26 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
                   <div>
                     <div className="sales-ranking-scope">
                       <span>Daily Performance</span>
-                      <strong>{selectedBranchLabel} · {selectedDate || "-"}</strong>
+                      <strong>{selectedBranchLabel} · {selectedDateDisplay}</strong>
                     </div>
-                    <RankingList rows={selectedRankedRows} metric={rankingCategory} emptyText="No executives found for this date." />
+                    <RankingList
+                      key={`daily-${selectedBranch}-${selectedSheetDate}-${rankingCategory}-${rankingMode}`}
+                      rows={selectedRankedRows}
+                      metric={rankingCategory}
+                      emptyText={hasSelectedDateData ? "No executives found for this date." : "Data not available for this selected date."}
+                    />
                   </div>
                   <div>
                     <div className="sales-ranking-scope">
                       <span>Overall Progress</span>
                       <strong>{selectedBranchLabel} · Through {defaultCutoffDate || "-"}</strong>
                     </div>
-                    <RankingList rows={combinedRankedRows} metric={rankingCategory} emptyText="No overall ranking available." />
+                    <RankingList
+                      key={`overall-${selectedBranch}-${defaultCutoffDate}-${rankingCategory}-${rankingMode}`}
+                      rows={combinedRankedRows}
+                      metric={rankingCategory}
+                      emptyText="No overall ranking available."
+                    />
                   </div>
                 </div>
               </div>
@@ -674,7 +842,7 @@ function SalesContent({ sidebarOpen, setSidebarOpen }: { sidebarOpen: boolean; s
                     {executiveRows.length === 0 && (
                       <tr>
                         <td colSpan={10}>
-                          <div className="sales-empty-state">No executive testing records for this date.</div>
+                          <div className="sales-empty-state">{hasSelectedDateData ? "No executive testing records for this date." : "Data not available for this selected date."}</div>
                         </td>
                       </tr>
                     )}

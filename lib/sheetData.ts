@@ -23,8 +23,8 @@ export const sheetConfig = {
   deviceTestingRange: "'Testing Metrics'!A2:G500", // Starting from A2 as specified
   deviceHeaders: ["Status", "Location", "Role", "Count", "Names", "Device ID"],
   // Master branchwise testing (sales closing) - dynamic date columns start at D
-  masterBranchSheetName: "Master sheet Branchwise Testing",
-  masterBranchRange: "'Master sheet Branchwise Testing'!A1:Z500",
+  masterBranchSheetName: "Master Sheet",
+  masterBranchRange: "'Master Sheet'!A1:ZZ500",
 };
 
 export const STATUS_META = {
@@ -411,7 +411,6 @@ export function parseMasterBranchwiseData(values: unknown[][]): SalesSummary {
     const region = String(row[0] || "").trim();
     const moduleName = String(row[1] || "").trim();
     const executive = String(row[2] || "").trim();
-    if (!executive) continue;
 
     const statusesByDate: Record<string, string> = {};
     let totalDays = 0;
@@ -432,15 +431,20 @@ export function parseMasterBranchwiseData(values: unknown[][]): SalesSummary {
       }
     }
 
+    // Include the row even if `executive` is empty so branches are discovered.
     entries.push({ region, module: moduleName, executive, statusesByDate });
-    byExecutive[executive] = byExecutive[executive] || { totalDays: 0, counts: {}, latest: undefined };
-    byExecutive[executive].totalDays += totalDays;
-    byExecutive[executive].latest = Object.keys(statusesByDate).length ? statusesByDate[dates[dates.length - 1]] : undefined;
-    byExecutive[executive].counts = byExecutive[executive].counts || {};
-    // accumulate counts by status from statusesByDate
-    for (const d of Object.keys(statusesByDate)) {
-      const s = statusesByDate[d];
-      byExecutive[executive].counts[s] = (byExecutive[executive].counts[s] || 0) + 1;
+
+    // Only aggregate per-executive stats when an executive value exists
+    if (executive) {
+      byExecutive[executive] = byExecutive[executive] || { totalDays: 0, counts: {}, latest: undefined };
+      byExecutive[executive].totalDays += totalDays;
+      byExecutive[executive].latest = Object.keys(statusesByDate).length ? statusesByDate[dates[dates.length - 1]] : undefined;
+      byExecutive[executive].counts = byExecutive[executive].counts || {};
+      // accumulate counts by status from statusesByDate
+      for (const d of Object.keys(statusesByDate)) {
+        const s = statusesByDate[d];
+        byExecutive[executive].counts[s] = (byExecutive[executive].counts[s] || 0) + 1;
+      }
     }
   }
 

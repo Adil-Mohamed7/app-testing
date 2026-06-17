@@ -21,6 +21,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
   const router = useRouter();
   const moduleSelected = Boolean(params.get("module"));
   const isDeviceTestingPage = pathname === "/device-testing";
+  const isSalesPage = pathname === "/sales";
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -65,7 +66,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
         <span className="nav-label">Main</span>
         <button
           type="button"
-          className={`nav-item${!moduleSelected && !isDeviceTestingPage ? " active" : ""}`}
+          className={`nav-item${!moduleSelected && !isDeviceTestingPage && !isSalesPage ? " active" : ""}`}
           onClick={() => {
             router.push("/", { scroll: false });
             onClose?.();
@@ -76,8 +77,21 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
             <span className="nav-icon">▦</span>
             Dashboard
           </span>
-          {!moduleSelected && !isDeviceTestingPage && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
+          {!moduleSelected && !isDeviceTestingPage && !isSalesPage && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
         </button>
+
+        {NAV_ITEMS.map((item) => (
+          <a key={item.label} className={`nav-item${item.label === "Sales Closing" && isSalesPage ? " active" : ""}`} href="#" onClick={(e) => {
+            e.preventDefault();
+            if (item.label === "Sales Closing") {
+              router.push("/sales");
+            }
+            onClose?.();
+          }} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "inherit" }}>
+            <span className="nav-icon">{item.icon}</span>
+            {item.label}
+          </a>
+        ))}
         
         <button
           type="button"
@@ -94,19 +108,6 @@ export default function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose
           </span>
           {isDeviceTestingPage && <span style={{ fontSize: 11, opacity: 0.7, color: "var(--accent-blue)" }}>● active</span>}
         </button>
-        
-        {NAV_ITEMS.map((item) => (
-          <a key={item.label} className={`nav-item${item.label === "Sales Closing" && pathname === "/sales" ? " active" : ""}`} href="#" onClick={(e) => {
-            e.preventDefault();
-            if (item.label === "Sales Closing") {
-              router.push("/sales");
-            }
-            onClose?.();
-          }} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "inherit" }}>
-            <span className="nav-icon">{item.icon}</span>
-            {item.label}
-          </a>
-        ))}
 
         {/* Modules section */}
         <button

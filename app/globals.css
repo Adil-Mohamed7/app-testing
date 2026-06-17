@@ -983,7 +983,7 @@ body::before {
   font-weight: 700;
 }
 
-.sales-date-control select,
+.sales-date-control input,
 .sales-ranking-controls select {
   appearance: none;
   background: rgba(8,12,20,0.75);
@@ -995,13 +995,46 @@ body::before {
   font-size: 13px;
 }
 
+.sales-date-control input {
+  color-scheme: dark;
+  min-height: 39px;
+}
+
+.sales-date-control span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sales-no-data-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-color: rgba(245,158,11,0.28);
+  background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(59,130,246,0.06));
+}
+
+.sales-no-data-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245,158,11,0.14);
+  border: 1px solid rgba(245,158,11,0.28);
+  color: var(--accent-amber);
+  font-weight: 900;
+}
+
 .sales-branch-filter-card {
   min-width: 0;
 }
 
 .sales-branch-filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
 
@@ -1017,7 +1050,7 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-height: 98px;
+  min-height: 104px;
   transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
 
@@ -1035,17 +1068,32 @@ body::before {
   line-height: 1.25;
 }
 
-.sales-branch-filter strong {
-  font-size: 24px;
-  font-weight: 900;
-  line-height: 1;
-}
-
 .sales-branch-filter em {
   color: var(--text-muted);
   font-size: 11px;
   font-style: normal;
   line-height: 1.3;
+}
+
+.sales-branch-filter strong {
+  color: var(--text-primary);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 5px;
+}
+
+.sales-branch-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.sales-branch-card-footer b {
+  color: var(--accent-green);
+  font-size: 12px;
 }
 
 .sales-kpi-grid {
@@ -1294,8 +1342,16 @@ body::before {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
   font-size: 12.5px;
   margin-bottom: 5px;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .sales-rank-label span {
@@ -1308,6 +1364,40 @@ body::before {
 
 .sales-rank-label strong {
   color: var(--text-secondary);
+}
+
+.sales-rank-expanded {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sales-rank-expanded span {
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.045);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sales-view-more-btn {
+  align-self: center;
+  border: 1px solid rgba(59,130,246,0.28);
+  background: rgba(59,130,246,0.1);
+  color: #93c5fd;
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sales-view-more-btn:hover {
+  background: rgba(59,130,246,0.16);
 }
 
 .sales-leaderboard-grid {
